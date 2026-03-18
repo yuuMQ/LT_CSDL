@@ -1,0 +1,243 @@
+using System;
+using System.Data;
+using System.Data.SqlClient;
+using System.Windows.Forms;
+
+namespace CSDL
+{
+    public partial class Form2 : Form
+    {
+        // Nh? d?i tên Server cho kh?p v?i máy c?a b?n n?u c?n
+        private string connectionString = "Server=412;Database=Northwind;Integrated Security=True;";
+
+        // S?A L?I TÊN BI?N ? ÐÂY: dtSanPham thay vì dvgSanPham
+        private DataTable dtSanPham;
+
+        public Form2()
+        {
+            InitializeComponent();
+        }
+
+        // S? ki?n Load Form
+        private void Form2_Load(object sender, EventArgs e)
+        {
+            LoadComboBoxData(); // Ph?i load ComboBox tru?c
+            LoadDataToGridView(); // Sau dó m?i load GridView
+        }
+
+        // 1. Hàm d?c d? li?u lên DataGridView
+        private void LoadDataToGridView()
+        {
+            string query = @"
+                SELECT 
+                    p.ProductID, 
+                    p.ProductName, 
+                    p.UnitPrice, 
+                    p.QuantityPerUnit, 
+                    c.CategoryName, 
+                    s.CompanyName 
+                FROM Products p
+                INNER JOIN Categories c ON p.CategoryID = c.CategoryID
+                INNER JOIN Suppliers s ON p.SupplierID = s.SupplierID";
+
+            using (SqlConnection conn = new SqlConnection(connectionString))
+            {
+                try
+                {
+                    SqlDataAdapter adapter = new SqlDataAdapter(query, conn);
+                    dtSanPham = new DataTable();
+                    adapter.Fill(dtSanPham);
+
+                    dgvSanPham.DataSource = dtSanPham;
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("L?i t?i d? li?u S?n ph?m: " + ex.Message);
+                }
+            }
+        }
+
+        // 2. Hàm d?c d? li?u vào ComboBox
+        private void LoadComboBoxData()
+        {
+            using (SqlConnection conn = new SqlConnection(connectionString))
+            {
+                try
+                {
+                    // Load Lo?i S?n Ph?m
+                    SqlDataAdapter daLoai = new SqlDataAdapter("SELECT CategoryID, CategoryName FROM Categories", conn);
+                    DataTable dtLoai = new DataTable();
+                    daLoai.Fill(dtLoai);
+                    cboLoaiSP.DataSource = dtLoai;
+                    cboLoaiSP.DisplayMember = "CategoryName";
+                    cboLoaiSP.ValueMember = "CategoryID";
+
+                    // Load Nhà Cung C?p
+                    SqlDataAdapter daNhaCC = new SqlDataAdapter("SELECT SupplierID, CompanyName FROM Suppliers", conn);
+                    DataTable dtNhaCC = new DataTable();
+                    daNhaCC.Fill(dtNhaCC);
+                    cboNhaCC.DataSource = dtNhaCC;
+                    cboNhaCC.DisplayMember = "CompanyName";
+                    cboNhaCC.ValueMember = "SupplierID";
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("L?i t?i d? li?u ComboBox: " + ex.Message);
+                }
+            }
+        }
+
+        // 3. X? lý click vào DataGridView hi?n th? lên Textbox
+        private void dgvSanPham_CellClick(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex >= 0)
+            {
+                DataGridViewRow row = dgvSanPham.Rows[e.RowIndex];
+
+                txtTenSP.Text = row.Cells["ProductName"].Value.ToString();
+                txtDonGia.Text = row.Cells["UnitPrice"].Value.ToString();
+                txtSoLuong.Text = row.Cells["QuantityPerUnit"].Value.ToString();
+                cboLoaiSP.Text = row.Cells["CategoryName"].Value.ToString();
+                cboNhaCC.Text = row.Cells["CompanyName"].Value.ToString();
+            }
+        }
+        // Hàm ph? tr?: L?y ProductID c?a dòng dang du?c ch?n trên lu?i
+        private int GetSelectedProductID()
+        {
+            if (dgvSanPham.CurrentRow != null && dgvSanPham.CurrentRow.Index >= 0)
+            {
+                return Convert.ToInt32(dgvSanPham.CurrentRow.Cells["ProductID"].Value);
+            }
+            return -1; // Không có dòng nào du?c ch?n
+        }
+
+        // 4. X? lý nút Thêm (Insert)
+        private void btnThem_Click(object sender, EventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(txtTenSP.Text))
+            {
+                MessageBox.Show("Vui lòng nh?p tên s?n ph?m!", "C?nh báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            string query = @"INSERT INTO Products (ProductName, UnitPrice, QuantityPerUnit, CategoryID, SupplierID) 
+                             VALUES (@TenSP, @DonGia, @SoLuong, @MaLoai, @MaNhaCC)";
+
+            using (SqlConnection conn = new SqlConnection(connectionString))
+            {
+                try
+                {
+                    SqlCommand cmd = new SqlCommand(query, conn);
+                    cmd.Parameters.AddWithValue("@TenSP", txtTenSP.Text.Trim());
+                    cmd.Parameters.AddWithValue("@DonGia", string.IsNullOrEmpty(txtDonGia.Text) ? 0 : Convert.ToDecimal(txtDonGia.Text));
+                    cmd.Parameters.AddWithValue("@SoLuong", txtSoLuong.Text.Trim());
+                    cmd.Parameters.AddWithValue("@MaLoai", cboLoaiSP.SelectedValue);
+                    cmd.Parameters.AddWithValue("@MaNhaCC", cboNhaCC.SelectedValue);
+
+                    conn.Open();
+                    cmd.ExecuteNonQuery(); // Th?c thi l?nh Thêm
+
+                    MessageBox.Show("Thêm s?n ph?m thành công!", "Thông báo");
+                    LoadDataToGridView(); // C?p nh?t l?i lu?i sau khi thêm
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("L?i khi thêm: " + ex.Message, "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+        }
+
+        // 5. X? lý nút S?a (Update)
+        private void btnSua_Click(object sender, EventArgs e)
+        {
+            int productID = GetSelectedProductID();
+            if (productID == -1)
+            {
+                MessageBox.Show("Vui lòng ch?n m?t s?n ph?m trên lu?i d? s?a!", "C?nh báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            string query = @"UPDATE Products 
+                             SET ProductName = @TenSP, UnitPrice = @DonGia, QuantityPerUnit = @SoLuong, 
+                                 CategoryID = @MaLoai, SupplierID = @MaNhaCC 
+                             WHERE ProductID = @MaSP";
+
+            using (SqlConnection conn = new SqlConnection(connectionString))
+            {
+                try
+                {
+                    SqlCommand cmd = new SqlCommand(query, conn);
+                    cmd.Parameters.AddWithValue("@TenSP", txtTenSP.Text.Trim());
+                    cmd.Parameters.AddWithValue("@DonGia", string.IsNullOrEmpty(txtDonGia.Text) ? 0 : Convert.ToDecimal(txtDonGia.Text));
+                    cmd.Parameters.AddWithValue("@SoLuong", txtSoLuong.Text.Trim());
+                    cmd.Parameters.AddWithValue("@MaLoai", cboLoaiSP.SelectedValue);
+                    cmd.Parameters.AddWithValue("@MaNhaCC", cboNhaCC.SelectedValue);
+                    cmd.Parameters.AddWithValue("@MaSP", productID); // C?n có ID d? bi?t s?a dòng nào
+
+                    conn.Open();
+                    cmd.ExecuteNonQuery(); // Th?c thi l?nh S?a
+
+                    MessageBox.Show("C?p nh?t thông tin thành công!", "Thông báo");
+                    LoadDataToGridView(); // C?p nh?t l?i lu?i
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("L?i khi s?a: " + ex.Message, "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+        }
+
+        // 6. X? lý nút Xóa (Delete)
+        private void btnXoa_Click(object sender, EventArgs e)
+        {
+            int productID = GetSelectedProductID();
+            if (productID == -1)
+            {
+                MessageBox.Show("Vui lòng ch?n m?t s?n ph?m trên lu?i d? xóa!", "C?nh báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            // H?i l?i ngu?i dùng cho ch?c ch?n
+            DialogResult dialogResult = MessageBox.Show("B?n có ch?c ch?n mu?n xóa s?n ph?m này không?", "Xác nh?n xóa", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            if (dialogResult == DialogResult.Yes)
+            {
+                string query = "DELETE FROM Products WHERE ProductID = @MaSP";
+
+                using (SqlConnection conn = new SqlConnection(connectionString))
+                {
+                    try
+                    {
+                        SqlCommand cmd = new SqlCommand(query, conn);
+                        cmd.Parameters.AddWithValue("@MaSP", productID);
+
+                        conn.Open();
+                        cmd.ExecuteNonQuery(); // Th?c thi l?nh Xóa
+
+                        MessageBox.Show("Xóa s?n ph?m thành công!", "Thông báo");
+                        LoadDataToGridView(); // C?p nh?t l?i lu?i
+
+                        // Xóa tr?ng các ô nh?p li?u
+                        txtTenSP.Clear();
+                        txtSoLuong.Clear();
+                        txtDonGia.Clear();
+                    }
+                    catch (Exception ex)
+                    {
+                        // L?i ph? bi?n khi xóa là l?i khóa ngo?i (Foreign Key Constraint) do s?n ph?m này dã có trong hóa don (Order Details)
+                        MessageBox.Show("Không th? xóa s?n ph?m này vì nó dang liên k?t v?i d? li?u khác (hóa don).\nChi ti?t l?i: " + ex.Message, "L?i ràng bu?c d? li?u", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+            }
+        }
+
+        // 7. X? lý nút Thoát
+        private void btnThoat_Click(object sender, EventArgs e)
+        {
+            DialogResult dialogResult = MessageBox.Show("B?n có mu?n thoát ?ng d?ng?", "Xác nh?n", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            if (dialogResult == DialogResult.Yes)
+            {
+                this.Close(); // Ðóng Form2
+            }
+        }
+    }
+}
