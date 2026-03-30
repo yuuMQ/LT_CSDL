@@ -1,0 +1,17 @@
+D:\BTTH3\BTTH3\obj\Debug\GUI_QuanLi.csproj.AssemblyReference.cache
+D:\BTTH3\BTTH3\obj\Debug\BTTH3.Properties.Resources.resources
+D:\BTTH3\BTTH3\obj\Debug\BTTH3.GUI_SinhVien.resources
+D:\BTTH3\BTTH3\obj\Debug\GUI_QuanLi.csproj.GenerateResource.cache
+D:\BTTH3\BTTH3\obj\Debug\GUI_QuanLi.csproj.CoreCompileInputs.cache
+D:\BTTH3\BTTH3\bin\Debug\BTTH3.exe.config
+D:\BTTH3\BTTH3\bin\Debug\BTTH3.exe
+D:\BTTH3\BTTH3\bin\Debug\BTTH3.pdb
+D:\BTTH3\BTTH3\bin\Debug\BUS_QuanLy.dll
+D:\BTTH3\BTTH3\bin\Debug\DTO_QuanLy.dll
+D:\BTTH3\BTTH3\bin\Debug\DAL_QuanLy.dll
+D:\BTTH3\BTTH3\bin\Debug\BUS_QuanLy.pdb
+D:\BTTH3\BTTH3\bin\Debug\DTO_QuanLy.pdb
+D:\BTTH3\BTTH3\bin\Debug\DAL_QuanLy.pdb
+D:\BTTH3\BTTH3\obj\Debug\GUI_QuanLi.csproj.CopyComplete
+D:\BTTH3\BTTH3\obj\Debug\BTTH3.exe
+D:\BTTH3\BTTH3\obj\Debug\BTTH3.pdb
